@@ -1,0 +1,59 @@
+#include <WiFiNINA.h>     
+#include <ThingSpeak.h>    
+#include <DHT.h>           
+
+#define DHTPIN 2
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+#define SECRET_SSID "12345678"
+#define SECRET_PASS "12345678"
+
+#define SECRET_CH_ID 2624582
+#define SECRET_WRITE_APIKEY "GSENQJRXQU1W4FX4"
+
+char ssid[] = SECRET_SSID;
+char pass[] = SECRET_PASS;
+WiFiClient client;
+unsigned long channelID = SECRET_CH_ID;
+const char* apiKey = SECRET_WRITE_APIKEY;
+
+void setup() {
+  Serial.begin(115200);
+  
+  dht.begin();
+
+  
+  Serial.print("Connecting to SSID: ");
+  Serial.println(ssid);
+  while (WiFi.status() != WL_CONNECTED) {
+    WiFi.begin(ssid, pass);
+    Serial.print(".");
+    delay(5000);
+  }
+  Serial.println("\nWiFi Connected");
+  ThingSpeak.begin(client);
+}
+
+void loop() {
+  float Humidity = dht.readHumidity();
+  float Temperature = dht.readTemperature();
+
+  Serial.print("Humidity: ");
+  Serial.print(Humidity);
+  Serial.print("%  Temperature: ");
+  Serial.print(Temperature);
+  Serial.println("°C");
+
+  ThingSpeak.setField(1, Humidity);
+  ThingSpeak.setField(2, Temperature);
+
+  int OutputCode = ThingSpeak.writeFields(channelID, apiKey);
+  if (OutputCode == 200) {
+    Serial.println("Successfuly Updated Channel.");
+  } else {
+    Serial.print("Channel Update Failed. HTTP error code ");
+    Serial.println(OutputCode);
+  }
+
+  delay(60000);
+}
